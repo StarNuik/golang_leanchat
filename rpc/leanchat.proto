@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+option go_package = "leanchat/rpc";
+
+message Uuid {
+	string data = 1;
+}
+
+message ChatMessage {
+	string user_name = 1;
+	string msg_content = 2;
+}
+
+service Leanchat {
+	rpc CreateChannel(CreateChannelRequest) returns (CreateChannelResponse) {}
+	rpc SearchChannels(SearchChannelsRequest) returns (SearchChannelsResponse) {}
+	rpc PeekChannel(PeekChannelRequest) returns (PeekChannelResponse) {}
+	rpc MessageChannel(MessageChannelRequest) returns (MessageChannelResponse) {}
+}
+
+message CreateChannelRequest {
+	string chan_name = 1;
+}
+message CreateChannelResponse {}
+
+message SearchChannelsRequest {
+	uint32 req_count = 1;
+	optional string name_query = 2;
+}
+message SearchChannelsResponse {
+	repeated Uuid chan_ids = 1;
+	repeated string chan_names = 2;
+}
+
+message PeekChannelRequest {
+	Uuid chan_id = 1;
+	uint32 req_count = 2;
+}
+// messages are sorted newest -> oldest
+message PeekChannelResponse {
+	string chan_name = 1;
+	repeated ChatMessage messages = 2;
+}
+
+message MessageChannelRequest {
+	Uuid chan_id = 1;
+	ChatMessage message = 2;
+}
+message MessageChannelResponse {}

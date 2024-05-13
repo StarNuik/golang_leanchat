@@ -1,0 +1,25 @@
+volumes:
+  vol-postgres:
+# networks:
+#   net-db:
+
+services:
+  # leanchat:
+  #   build: .
+  #   ports: [ 9001:3000, ]
+  #   networks: [ net-db, ]
+  #   restart: on-failure:5
+  #   environment:
+  #     POSTGRES_USER: psql
+  #     POSTGRES_PASSWORD: 123456
+  #     POSTGRES_DB: dev
+  postgres:
+    image: postgres
+    # networks: [ net-db, ]
+    ports: [ 5432:5432, ]
+    volumes: [ vol-postgres:/var/lib/postgresql/data, ]
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: leanchat
+
