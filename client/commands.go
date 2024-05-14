@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"starnuik/leanchat/rpc"
-	"starnuik/leanchat/server"
+	"github.com/starnuik/golang_leanchat/rpc"
+	"github.com/starnuik/golang_leanchat/server"
 
 	"github.com/gofrs/uuid/v5"
 )

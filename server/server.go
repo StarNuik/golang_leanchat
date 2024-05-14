@@ -6,7 +6,8 @@ import (
 	"log"
 	"net"
 	"net/url"
-	"starnuik/leanchat/rpc"
+
+	"github.com/starnuik/golang_leanchat/rpc"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"

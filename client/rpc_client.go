@@ -3,8 +3,9 @@ package client
 import (
 	"context"
 	"net/url"
-	"starnuik/leanchat/rpc"
 	"time"
+
+	"github.com/starnuik/golang_leanchat/rpc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

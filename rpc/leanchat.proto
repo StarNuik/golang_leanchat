@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "leanchat/rpc";
+option go_package = "github.com/starnuik/golang_leanchat/rpc";
 
 message Uuid {
 	string data = 1;

@@ -1,4 +1,4 @@
-module starnuik/leanchat
+module github.com/starnuik/golang_leanchat
 
 go 1.22.2
 

@@ -3,7 +3,8 @@ package main
 import (
 	"log"
 	"os"
-	"starnuik/leanchat/client"
+
+	"github.com/starnuik/golang_leanchat/client"
 
 	"github.com/alecthomas/kong"
 )
