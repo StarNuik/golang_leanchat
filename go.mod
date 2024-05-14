@@ -1,6 +1,6 @@
 module github.com/starnuik/golang_leanchat
 
-go 1.22.2
+go 1.21
 
 require (
 	github.com/alecthomas/kong v0.9.0
