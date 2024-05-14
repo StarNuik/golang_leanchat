@@ -30,8 +30,10 @@ type listChannelsCmd struct {
 	ServerUrl *url.URL `arg:""`
 	Count     uint8    `default:"31"`
 }
-
-type createChannelCmd struct{}
+type createChannelCmd struct {
+	ServerUrl   *url.URL `arg:""`
+	ChannelName string   `arg:""`
+}
 type runServerCmd struct {
 	Port             uint16 `arg:""`
 	PostgresUser     string `arg:"" env:"POSTGRES_USER"`

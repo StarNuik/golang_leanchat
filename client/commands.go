@@ -94,7 +94,21 @@ func (cmd *listChannelsCmd) Run() error {
 	chs := res.Channels
 	for idx := len(chs) - 1; idx >= 0; idx-- {
 		ch := chs[idx]
-		fmt.Printf("  channel[ %s ], channel_id[ %s ]\n", ch.ChanName, ch.ChanId)
+		fmt.Printf("  channel[ %s ], channel_id[ %s ]\n", ch.ChanName, ch.ChanId.Data)
 	}
+	return nil
+}
+
+func (cmd *createChannelCmd) Run() error {
+	rc := buildRpcClient(cmd.ServerUrl)
+	defer rc.Close()
+
+	req := rpc.CreateChannelRequest{
+		ChanName: cmd.ChannelName,
+	}
+	res, err := rc.rpc.CreateChannel(context.TODO(), &req)
+	checkClientError(err, "rc.CreateChannel")
+
+	fmt.Printf("created channel\nchannel[ %s ], channel_id[ %s ]\n", res.Channel.ChanName, res.Channel.ChanId.Data)
 	return nil
 }

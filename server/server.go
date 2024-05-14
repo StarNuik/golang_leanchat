@@ -9,6 +9,7 @@ import (
 	"starnuik/leanchat/rpc"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 )
 
@@ -33,9 +34,16 @@ func relayError(err error, where string) error {
 	return fmt.Errorf("%s error", where)
 }
 
-func checkRowsAffected(tag *pgconn.CommandTag, rows int64, op string) error {
+func checkRowsAffected(tag *pgconn.CommandTag, rows int64, where string) error {
 	if tag.RowsAffected() != rows {
-		return fmt.Errorf("%s, rows affected: %d, should be: %d", op, tag.RowsAffected(), rows)
+		return fmt.Errorf("%s, rows affected: %d, should be: %d", where, tag.RowsAffected(), rows)
+	}
+	return nil
+}
+
+func checkStringNotEmpty(str string) error {
+	if str == "" {
+		return fmt.Errorf("string is empty")
 	}
 	return nil
 }
@@ -71,7 +79,7 @@ func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelReques
 	res := rpc.PeekChannelResponse{}
 	sql := rs.sql.pool
 
-	row := sql.QueryRow(context.TODO(), `
+	row := sql.QueryRow(ctx, `
 		SELECT chan_name
 		FROM channels
 		WHERE chan_id = $1`,
@@ -81,7 +89,7 @@ func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelReques
 		return nil, relayError(err, "row.Scan")
 	}
 
-	rows, err := sql.Query(context.TODO(), `
+	rows, err := sql.Query(ctx, `
 		SELECT user_name, content
 		FROM messages
 		WHERE chan_id = $1
@@ -110,25 +118,42 @@ func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelReques
 	return &res, nil
 }
 
-func (rs *RpcServer) MessageChannel(ctx context.Context, req *rpc.MessageChannelRequest) (*rpc.MessageChannelResponse, error) {
-	sql := rs.sql.pool
+func messageChannel(ctx context.Context, sql *pgxpool.Pool, chanId *rpc.Uuid, name string, message string) error {
+	err := checkStringNotEmpty(name)
+	if err != nil {
+		return relayError(err, "checkStringNotEmpty")
+	}
+	err = checkStringNotEmpty(message)
+	if err != nil {
+		return relayError(err, "checkStringNotEmpty")
+	}
 
-	tag, err := sql.Exec(context.TODO(), `
+	tag, err := sql.Exec(ctx, `
 		INSERT INTO messages
 		(chan_id, user_name, content)
 		VALUES
 		($1, $2, $3)`,
-		req.ChanId.Data,
-		maxLength(req.Message.UserName, 63),
-		req.Message.MsgContent,
+		chanId.Data,
+		maxLength(name, 63),
+		message,
 	)
 	if err != nil {
-		return nil, relayError(err, "sql.Exec")
+		return relayError(err, "sql.Exec")
 	}
 	err = checkRowsAffected(&tag, 1, "sql.Exec")
 	if err != nil {
-		return nil, relayError(err, "checkRowsAffected")
+		return relayError(err, "checkRowsAffected")
 	}
+	return nil
+}
+
+func (rs *RpcServer) MessageChannel(ctx context.Context, req *rpc.MessageChannelRequest) (*rpc.MessageChannelResponse, error) {
+
+	err := messageChannel(ctx, rs.sql.pool, req.ChanId, req.Message.UserName, req.Message.MsgContent)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Println("responded to MessageChannel")
 	return &rpc.MessageChannelResponse{}, nil
 }
@@ -136,7 +161,7 @@ func (rs *RpcServer) MessageChannel(ctx context.Context, req *rpc.MessageChannel
 func (rs *RpcServer) ListChannels(ctx context.Context, req *rpc.ListChannelsRequest) (*rpc.ListChannelsResponse, error) {
 	sql := rs.sql.pool
 
-	rows, err := sql.Query(context.TODO(), `
+	rows, err := sql.Query(ctx, `
 		SELECT chan_id, chan_name
 		FROM channels
 		ORDER BY chan_created DESC
@@ -163,5 +188,43 @@ func (rs *RpcServer) ListChannels(ctx context.Context, req *rpc.ListChannelsRequ
 	res := rpc.ListChannelsResponse{
 		Channels: chans,
 	}
+	log.Println("responded to ListChannels")
+	return &res, nil
+}
+
+func (rs *RpcServer) CreateChannel(ctx context.Context, req *rpc.CreateChannelRequest) (*rpc.CreateChannelResponse, error) {
+	res := rpc.CreateChannelResponse{
+		Channel: &rpc.ChatChannel{
+			ChanId: &rpc.Uuid{},
+		},
+	}
+	sql := rs.sql.pool
+
+	err := checkStringNotEmpty(req.ChanName)
+	if err != nil {
+		return nil, relayError(err, "checkStringNotEmpty")
+	}
+
+	res.Channel.ChanName = maxLength(req.ChanName, 63)
+	row := sql.QueryRow(ctx, `
+		INSERT INTO channels
+		(chan_name)
+		VALUES
+		($1)
+		RETURNING
+		chan_id`,
+		res.Channel.ChanName,
+	)
+	err = row.Scan(&res.Channel.ChanId.Data)
+	if err != nil {
+		return nil, relayError(err, "row.Scan")
+	}
+
+	err = messageChannel(ctx, sql, res.Channel.ChanId, "Leanchat", "Welcome to Leanchat!")
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("responded to CreateChannel")
 	return &res, nil
 }
