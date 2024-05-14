@@ -10,9 +10,9 @@ golang_leanchat --help
 
 
 # Install server
-curl https://raw.githubusercontent.com/StarNuik/golang_leanchat/master/compose.yml > compose.yml
+curl https://api.github.com/repos/starnuik/golang_leanchat/contents/compose.yml > compose.yml
 docker-compose pull
 
 # Run Server
-docker-compose up -d
+docker-compose up
 ```
