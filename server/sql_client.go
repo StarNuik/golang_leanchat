@@ -48,11 +48,3 @@ func BuildSqlClient(url *url.URL) (*SqlClient, error) {
 func (sc *SqlClient) Close() {
 	sc.close()
 }
-
-func (sc *SqlClient) Conn() *pgxpool.Pool {
-	return sc.pool
-}
-
-// func (sc *SqlClient) GetChannelMessages(chanId *uuid.UUID, count uint) {
-//
-// }

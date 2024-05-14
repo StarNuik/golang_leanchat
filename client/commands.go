@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"starnuik/leanchat/rpc"
 	"starnuik/leanchat/server"
+
+	"github.com/gofrs/uuid/v5"
 )
 
 func (cmd *runServerCmd) Run() error {
@@ -27,14 +29,16 @@ func (cmd *runServerCmd) Run() error {
 	return nil
 }
 
-func (cmd *peekChannelCmd) Run() error {
-	rc, err := BuildRpcClient(cmd.ServerUrl)
+func buildRpcClient(url *url.URL) *RpcClient {
+	rc, err := BuildRpcClient(url)
 	checkClientError(err, "rpc.BuildRpcClient")
-	defer rc.Close()
+	return rc
+}
 
+func peekChannel(rc *RpcClient, channelId *uuid.UUID, count uint8) {
 	req := rpc.PeekChannelRequest{
-		ChanId:   rpc.PackUuid(cmd.ChannelId),
-		ReqCount: uint32(cmd.Count),
+		ChanId:   rpc.PackUuid(channelId),
+		ReqCount: uint32(count),
 	}
 	res, err := rc.Conn().PeekChannel(rc.Context, &req)
 	checkClientError(err, "rc.PeekChannel")
@@ -45,6 +49,32 @@ func (cmd *peekChannelCmd) Run() error {
 		msg := msgs[idx]
 		fmt.Printf("  user[ %s ]: %s\n", msg.UserName, msg.MsgContent)
 	}
+}
+
+func (cmd *peekChannelCmd) Run() error {
+	rc := buildRpcClient(cmd.ServerUrl)
+	defer rc.Close()
+
+	peekChannel(rc, cmd.ChannelId, cmd.Count)
+
+	return nil
+}
+
+func (cmd *messageChannelCmd) Run() error {
+	rc := buildRpcClient(cmd.ServerUrl)
+	defer rc.Close()
+
+	req := rpc.MessageChannelRequest{
+		ChanId: rpc.PackUuid(cmd.ChannelId),
+		Message: &rpc.ChatMessage{
+			UserName:   cmd.UserName,
+			MsgContent: cmd.Message,
+		},
+	}
+	_, err := rc.Conn().MessageChannel(rc.Context, &req)
+	checkClientError(err, "rc.MessageChannel")
+
+	peekChannel(rc, cmd.ChannelId, cmd.Count)
 
 	return nil
 }

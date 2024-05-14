@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"starnuik/leanchat/rpc"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"google.golang.org/grpc"
 )
 
@@ -30,6 +31,20 @@ func checkServerError(err error, where string) {
 func relayError(err error, where string) error {
 	log.Printf("%s error: %v\n", where, err)
 	return fmt.Errorf("%s error", where)
+}
+
+func checkRowsAffected(tag *pgconn.CommandTag, rows int64, op string) error {
+	if tag.RowsAffected() != rows {
+		return fmt.Errorf("%s, rows affected: %d, should be: %d", op, tag.RowsAffected(), rows)
+	}
+	return nil
+}
+
+func maxLength(str string, max int) string {
+	if len(str) > max {
+		return str[:max]
+	}
+	return str
 }
 
 func RunServer(ctx *ServerContext) {
@@ -55,7 +70,7 @@ func RunServer(ctx *ServerContext) {
 func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelRequest) (*rpc.PeekChannelResponse, error) {
 	log.Println("PeekChannel received")
 	res := rpc.PeekChannelResponse{}
-	sql := rs.sql.Conn()
+	sql := rs.sql.pool
 
 	row := sql.QueryRow(context.TODO(), `
 		SELECT chan_name
@@ -72,8 +87,10 @@ func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelReques
 		FROM messages
 		WHERE chan_id = $1
 		ORDER BY msg_created DESC
-		LIMIT $2
-	`, req.ChanId.Data, max(req.ReqCount, 255))
+		LIMIT $2`,
+		req.ChanId.Data,
+		min(req.ReqCount, 255),
+	)
 	if err != nil {
 		return nil, relayError(err, "sql.Query")
 	}
@@ -92,4 +109,27 @@ func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelReques
 
 	log.Println("PeekChannel responded")
 	return &res, nil
+}
+
+func (rs *RpcServer) MessageChannel(ctx context.Context, req *rpc.MessageChannelRequest) (*rpc.MessageChannelResponse, error) {
+	log.Println("MessageChannel received")
+	sql := rs.sql.pool
+
+	tag, err := sql.Exec(context.TODO(), `
+		INSERT INTO messages
+		(chan_id, user_name, content)
+		VALUES
+		($1, $2, $3)`,
+		req.ChanId.Data,
+		maxLength(req.Message.UserName, 63),
+		req.Message.MsgContent,
+	)
+	if err != nil {
+		return nil, relayError(err, "sql.Exec")
+	}
+	err = checkRowsAffected(&tag, 1, "sql.Exec")
+	if err != nil {
+		return nil, relayError(err, "checkRowsAffected")
+	}
+	return &rpc.MessageChannelResponse{}, nil
 }

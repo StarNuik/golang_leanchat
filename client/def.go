@@ -7,10 +7,10 @@ import (
 )
 
 type Cli struct {
-	Create  createChannelCmd  `cmd:""`
-	Search  searchChannelsCmd `cmd:""`
 	Peek    peekChannelCmd    `cmd:""`
 	Message messageChannelCmd `cmd:""`
+	Create  createChannelCmd  `cmd:""`
+	Search  searchChannelsCmd `cmd:""`
 	Serve   runServerCmd      `cmd:""`
 }
 
@@ -19,9 +19,15 @@ type peekChannelCmd struct {
 	ChannelId *uuid.UUID `arg:""`
 	Count     uint8      `default:"31"`
 }
+type messageChannelCmd struct {
+	ServerUrl *url.URL   `arg:""`
+	ChannelId *uuid.UUID `arg:""`
+	UserName  string     `arg:""`
+	Message   string     `arg:""`
+	Count     uint8      `default:"31"`
+}
 type createChannelCmd struct{}
 type searchChannelsCmd struct{}
-type messageChannelCmd struct{}
 type runServerCmd struct {
 	Port             uint16 `arg:""`
 	PostgresUser     string `arg:"" env:"POSTGRES_USER"`
