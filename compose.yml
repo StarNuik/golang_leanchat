@@ -10,11 +10,11 @@ services:
     networks: [ net-db, ]
     restart: on-failure:5
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: leanchat
+      PGUSER: postgres
+      PGPASSWORD: 123456
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: leanchat
   postgres:
     image: postgres
     networks: [ net-db, ]

@@ -36,9 +36,9 @@ type createChannelCmd struct {
 }
 type runServerCmd struct {
 	Port             uint16 `arg:""`
-	PostgresUser     string `arg:"" env:"POSTGRES_USER"`
-	PostgresPassword string `arg:"" env:"POSTGRES_PASSWORD"`
-	PostgresHost     string `arg:"" env:"POSTGRES_HOST"`
-	PostgresPort     uint16 `arg:"" env:"POSTGRES_PORT"`
-	PostgresDb       string `arg:"" env:"POSTGRES_DB"`
+	PostgresUser     string `arg:"" env:"PGUSER"`
+	PostgresPassword string `arg:"" env:"PGPASSWORD"`
+	PostgresHost     string `arg:"" env:"PGHOST"`
+	PostgresPort     uint16 `arg:"" env:"PGPORT"`
+	PostgresDb       string `arg:"" env:"PGDATABASE"`
 }
