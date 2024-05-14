@@ -11,10 +11,15 @@ message ChatMessage {
 	string msg_content = 2;
 }
 
+message ChatChannel {
+	Uuid chan_id = 1;
+	string chan_name = 2;
+}
+
 service Leanchat {
 	rpc PeekChannel(PeekChannelRequest) returns (PeekChannelResponse) {}
 	rpc MessageChannel(MessageChannelRequest) returns (MessageChannelResponse) {}
-	rpc SearchChannels(SearchChannelsRequest) returns (SearchChannelsResponse) {}
+	rpc ListChannels(ListChannelsRequest) returns (ListChannelsResponse) {}
 	rpc CreateChannel(CreateChannelRequest) returns (CreateChannelResponse) {}
 }
 
@@ -36,18 +41,17 @@ message MessageChannelRequest {
 message MessageChannelResponse {}
 
 
+message ListChannelsRequest {
+	uint32 req_count = 1;
+}
+message ListChannelsResponse {
+	repeated ChatChannel channels = 1;
+}
+
+
 message CreateChannelRequest {
 	string chan_name = 1;
 }
-message CreateChannelResponse {}
-
-
-message SearchChannelsRequest {
-	uint32 req_count = 1;
-	optional string name_query = 2;
+message CreateChannelResponse {
+	ChatChannel channel = 1;
 }
-message SearchChannelsResponse {
-	repeated Uuid chan_ids = 1;
-	repeated string chan_names = 2;
-}
-

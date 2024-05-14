@@ -68,7 +68,6 @@ func RunServer(ctx *ServerContext) {
 }
 
 func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelRequest) (*rpc.PeekChannelResponse, error) {
-	log.Println("PeekChannel received")
 	res := rpc.PeekChannelResponse{}
 	sql := rs.sql.pool
 
@@ -107,12 +106,11 @@ func (rs *RpcServer) PeekChannel(ctx context.Context, req *rpc.PeekChannelReques
 	}
 	res.Messages = msgs
 
-	log.Println("PeekChannel responded")
+	log.Println("responded to PeekChannel")
 	return &res, nil
 }
 
 func (rs *RpcServer) MessageChannel(ctx context.Context, req *rpc.MessageChannelRequest) (*rpc.MessageChannelResponse, error) {
-	log.Println("MessageChannel received")
 	sql := rs.sql.pool
 
 	tag, err := sql.Exec(context.TODO(), `
@@ -131,5 +129,39 @@ func (rs *RpcServer) MessageChannel(ctx context.Context, req *rpc.MessageChannel
 	if err != nil {
 		return nil, relayError(err, "checkRowsAffected")
 	}
+	log.Println("responded to MessageChannel")
 	return &rpc.MessageChannelResponse{}, nil
+}
+
+func (rs *RpcServer) ListChannels(ctx context.Context, req *rpc.ListChannelsRequest) (*rpc.ListChannelsResponse, error) {
+	sql := rs.sql.pool
+
+	rows, err := sql.Query(context.TODO(), `
+		SELECT chan_id, chan_name
+		FROM channels
+		ORDER BY chan_created DESC
+		LIMIT $1`,
+		req.ReqCount,
+	)
+	if err != nil {
+		return nil, relayError(err, "sql.Query")
+	}
+	defer rows.Close()
+
+	chans := []*rpc.ChatChannel{}
+	for rows.Next() {
+		ch := rpc.ChatChannel{
+			ChanId: &rpc.Uuid{},
+		}
+		err := rows.Scan(&ch.ChanId.Data, &ch.ChanName)
+		if err != nil {
+			return nil, relayError(err, "rows.Scan")
+		}
+		chans = append(chans, &ch)
+	}
+
+	res := rpc.ListChannelsResponse{
+		Channels: chans,
+	}
+	return &res, nil
 }

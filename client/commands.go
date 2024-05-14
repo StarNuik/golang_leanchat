@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"starnuik/leanchat/rpc"
@@ -40,7 +41,7 @@ func peekChannel(rc *RpcClient, channelId *uuid.UUID, count uint8) {
 		ChanId:   rpc.PackUuid(channelId),
 		ReqCount: uint32(count),
 	}
-	res, err := rc.Conn().PeekChannel(rc.Context, &req)
+	res, err := rc.rpc.PeekChannel(rc.Context, &req)
 	checkClientError(err, "rc.PeekChannel")
 
 	msgs := res.Messages
@@ -71,10 +72,29 @@ func (cmd *messageChannelCmd) Run() error {
 			MsgContent: cmd.Message,
 		},
 	}
-	_, err := rc.Conn().MessageChannel(rc.Context, &req)
+	_, err := rc.rpc.MessageChannel(rc.Context, &req)
 	checkClientError(err, "rc.MessageChannel")
 
 	peekChannel(rc, cmd.ChannelId, cmd.Count)
 
+	return nil
+}
+
+func (cmd *listChannelsCmd) Run() error {
+	rc := buildRpcClient(cmd.ServerUrl)
+	defer rc.Close()
+
+	req := rpc.ListChannelsRequest{
+		ReqCount: uint32(cmd.Count),
+	}
+	res, err := rc.rpc.ListChannels(context.TODO(), &req)
+	checkClientError(err, "rc.SearchChannels")
+
+	fmt.Printf("search channels\n")
+	chs := res.Channels
+	for idx := len(chs) - 1; idx >= 0; idx-- {
+		ch := chs[idx]
+		fmt.Printf("  channel[ %s ], channel_id[ %s ]\n", ch.ChanName, ch.ChanId)
+	}
 	return nil
 }

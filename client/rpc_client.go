@@ -43,10 +43,6 @@ func BuildRpcClient(url *url.URL) (*RpcClient, error) {
 	return rc, nil
 }
 
-func (rc *RpcClient) Conn() rpc.LeanchatClient {
-	return rc.rpc
-}
-
 func (rc *RpcClient) Close() {
 	rc.close()
 }
