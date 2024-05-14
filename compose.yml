@@ -5,7 +5,7 @@ networks:
 
 services:
   leanchat:
-    build: .
+    image: ghcr.io/starnuik/golang_leanchat:latest
     ports: [ 3000:3000, ]
     networks: [ net-db, ]
     restart: on-failure:5
